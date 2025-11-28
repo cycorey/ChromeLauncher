@@ -132,14 +132,15 @@ class BrowserLauncher {
     /// 激活已运行的浏览器窗口
     private func activateBrowserWindow(browser: BrowserType, profile: Profile) -> LaunchResult {
         // 策略：
-        // 1. 调用 Chrome 可执行文件 + --profile-directory + about:blank
-        //    about:blank 避免打开新标签页，同时触发 Chrome 内部 profile 激活逻辑
+        // 1. 调用 Chrome 可执行文件 + --profile-directory + URL
+        //    触发 Chrome 内部 profile 激活逻辑
         // 2. 用 AppleScript activate 将整个应用带到前台
+        // 3. 延迟后发送 ⌘W 关闭标签页
 
-        // 第一步：调用 Chrome 可执行文件，传递 about:blank 避免打开新标签页
+        // 第一步：调用 Chrome 可执行文件
         let process = Process()
         process.executableURL = URL(fileURLWithPath: browser.executablePath)
-        process.arguments = ["--profile-directory=\(profile.directoryName)", "about:blank"]
+        process.arguments = ["--profile-directory=\(profile.directoryName)", "https://ifconfig.co"]
 
         do {
             try process.run()
@@ -147,16 +148,28 @@ class BrowserLauncher {
             // 如果失败，继续尝试 AppleScript
         }
 
-        // 第二步：使用 AppleScript 将应用带到前台
-        let script = """
+        // 第二步：使用 AppleScript 激活应用
+        let activateScript = """
         tell application "\(browser.displayName)"
             activate
         end tell
         """
 
-        let appleScript = NSAppleScript(source: script)
+        let appleScript = NSAppleScript(source: activateScript)
         var appleError: NSDictionary?
         appleScript?.executeAndReturnError(&appleError)
+
+        // 第三步：延迟后关闭当前标签页（使用 osascript 命令行工具）
+        let browserName = browser.displayName
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) {
+            let closeProcess = Process()
+            closeProcess.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            closeProcess.arguments = [
+                "-e",
+                "tell application \"\(browserName)\" to tell front window to close active tab"
+            ]
+            try? closeProcess.run()
+        }
 
         return .success
     }

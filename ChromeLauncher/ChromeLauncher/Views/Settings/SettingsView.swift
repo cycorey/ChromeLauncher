@@ -1,4 +1,5 @@
 import SwiftUI
+import ApplicationServices
 
 /// 设置视图
 struct SettingsView: View {
@@ -15,6 +16,7 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
 
     @State private var quickFilters: [QuickFilter] = []
+    @State private var hasAccessibilityPermission: Bool = false
 
     var body: some View {
         TabView {
@@ -86,9 +88,56 @@ struct SettingsView: View {
                     configManager.setDefaultBrowser(newValue)
                 }
             }
+
+            Section("权限") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("辅助功能权限")
+                        Text("激活已运行的 Profile 窗口需要此权限")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    if hasAccessibilityPermission {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("已授权")
+                                .foregroundColor(.green)
+                        }
+                    } else {
+                        Button("请求授权") {
+                            requestAccessibilityPermission()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
         .padding()
+        .onAppear {
+            checkAccessibilityPermission()
+        }
+    }
+
+    /// 检查辅助功能权限
+    private func checkAccessibilityPermission() {
+        hasAccessibilityPermission = AXIsProcessTrusted()
+    }
+
+    /// 请求辅助功能权限
+    private func requestAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let trusted = AXIsProcessTrustedWithOptions(options)
+        hasAccessibilityPermission = trusted
+
+        // 如果用户在系统偏好设置中授权后返回，需要重新检查
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            checkAccessibilityPermission()
+        }
     }
 
     /// 快捷键设置
