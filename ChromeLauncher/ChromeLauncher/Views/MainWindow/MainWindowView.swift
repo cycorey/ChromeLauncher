@@ -209,19 +209,16 @@ struct MainWindowView: View {
                     ProfileRowView(profile: profile) {
                         appState.launch(profile: profile)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture(count: 2) {
-                        // 双击启动
-                        appState.launch(profile: profile)
-                    }
-                    .onTapGesture(count: 1) {
-                        // 单击选中
-                        selectedProfileId = profile.id
-                    }
+                    .tag(profile.id)
                     .contextMenu {
                         profileContextMenu(for: profile)
                     }
-                    .tag(profile.id)
+                }
+                .onTapGesture(count: 2) {
+                    // 双击启动选中的 Profile
+                    if let profile = selectedProfile {
+                        appState.launch(profile: profile)
+                    }
                 }
                 .listStyle(.inset)
                 .onKeyPress(.return) {

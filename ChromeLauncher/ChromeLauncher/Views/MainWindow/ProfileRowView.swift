@@ -79,7 +79,6 @@ struct ProfileRowView: View {
         .onHover { hovering in
             isHovering = hovering
         }
-        .contentShape(Rectangle())  // 确保整行可点击
     }
 }
 
