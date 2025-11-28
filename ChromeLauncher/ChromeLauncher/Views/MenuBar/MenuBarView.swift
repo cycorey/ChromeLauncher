@@ -136,13 +136,8 @@ struct MenuBarView: View {
 
     private func openSettings() {
         NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 14.0, *) {
-            NSApp.mainMenu?.items.first { $0.title == "ChromeLauncher" }?
-                .submenu?.items.first { $0.title == "Settings..." }?
-                .performAction()
-        } else {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        }
+        // 打开设置窗口
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 }
 

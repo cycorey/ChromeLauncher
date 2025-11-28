@@ -71,7 +71,7 @@ class HotkeyManager: ObservableObject {
         let hotkeyId = nextHotkeyId
         nextHotkeyId += 1
 
-        var hotKeyID = EventHotKeyID(signature: OSType(0x434C4348), id: hotkeyId)  // "CLCH"
+        let hotKeyID = EventHotKeyID(signature: OSType(0x434C4348), id: hotkeyId)  // "CLCH"
         var hotKeyRef: EventHotKeyRef?
 
         let status = RegisterEventHotKey(

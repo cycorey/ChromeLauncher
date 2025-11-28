@@ -45,7 +45,7 @@ struct ProfileDetailView: View {
         .onAppear {
             loadProfileData()
         }
-        .onChange(of: profile) { _, newProfile in
+        .onChange(of: profile) { newProfile in
             loadProfileData()
         }
         .sheet(isPresented: $showingHotkeySheet) {

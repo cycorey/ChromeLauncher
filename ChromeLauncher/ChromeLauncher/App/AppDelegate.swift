@@ -50,7 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             for (dirName, config) in profiles {
                 if let hotkey = config.globalHotkey {
                     let profileId = "\(browserType)_\(dirName)"
-                    hotkeyManager.registerProfileHotkey(profileId: profileId, keyCombo: hotkey)
+                    _ = hotkeyManager.registerProfileHotkey(profileId: profileId, keyCombo: hotkey)
                 }
             }
         }

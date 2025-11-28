@@ -49,7 +49,7 @@ struct SettingsView: View {
         Form {
             Section("显示") {
                 Toggle("在 Dock 中显示", isOn: $showInDock)
-                    .onChange(of: showInDock) { _, newValue in
+                    .onChange(of: showInDock) { newValue in
                         var settings = configManager.config.settings
                         settings.showInDock = newValue
                         configManager.updateSettings(settings)
@@ -61,7 +61,7 @@ struct SettingsView: View {
 
             Section("启动") {
                 Toggle("开机自动启动", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, newValue in
+                    .onChange(of: launchAtLogin) { newValue in
                         var settings = configManager.config.settings
                         settings.launchAtLogin = newValue
                         configManager.updateSettings(settings)
@@ -75,7 +75,7 @@ struct SettingsView: View {
                         Text(browserType.displayName).tag(browserType)
                     }
                 }
-                .onChange(of: defaultBrowser) { _, newValue in
+                .onChange(of: defaultBrowser) { newValue in
                     configManager.setDefaultBrowser(newValue)
                 }
             }

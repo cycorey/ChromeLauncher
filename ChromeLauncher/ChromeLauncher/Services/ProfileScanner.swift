@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Profile 扫描服务
 class ProfileScanner {
