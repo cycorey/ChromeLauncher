@@ -24,6 +24,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.launchProfileById(profileId)
             }
         }
+
+        // 延迟最大化启动时的窗口
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                if !window.isZoomed {
+                    window.zoom(nil)
+                }
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -66,10 +75,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 打开主窗口
         if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
             window.makeKeyAndOrderFront(nil)
+            // 最大化窗口
+            if !window.isZoomed {
+                window.zoom(nil)
+            }
         } else {
             // 如果窗口不存在，通过 openWindow 打开
             if #available(macOS 13.0, *) {
                 NSApp.sendAction(Selector(("showMainWindow:")), to: nil, from: nil)
+            }
+            // 延迟最大化新创建的窗口
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                    window.zoom(nil)
+                }
             }
         }
     }

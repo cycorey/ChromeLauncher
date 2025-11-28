@@ -319,7 +319,8 @@ struct ProfileDetailView: View {
 struct HotkeySettingSheet: View {
     let profile: Profile
     @Environment(\.dismiss) var dismiss
-    @State private var hotkeyText: String = ""
+    @State private var recordedHotkey: String = ""
+    @State private var isRecording: Bool = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -329,17 +330,22 @@ struct HotkeySettingSheet: View {
             Text("为 \"\(profile.displayName)\" 设置快捷键")
                 .foregroundColor(.secondary)
 
-            TextField("例如: cmd+shift+1", text: $hotkeyText)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 200)
+            // 快捷键录制区域
+            HotkeyRecorderView(hotkey: $recordedHotkey, isRecording: $isRecording)
+                .frame(width: 200, height: 36)
 
-            Text("支持的修饰键: cmd, shift, ctrl, alt")
+            Text(isRecording ? "请按下快捷键组合..." : "点击上方区域开始录制")
+                .font(.caption)
+                .foregroundColor(isRecording ? .accentColor : .secondary)
+
+            Text("支持的修饰键: ⌘ Command, ⇧ Shift, ⌃ Control, ⌥ Option")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             HStack {
                 Button("清除") {
                     ConfigManager.shared.setProfileHotkey(profile: profile, hotkey: nil)
+                    HotkeyManager.shared.unregisterProfileHotkey(profileId: profile.id)
                     dismiss()
                 }
 
@@ -350,20 +356,249 @@ struct HotkeySettingSheet: View {
                 }
 
                 Button("保存") {
-                    if !hotkeyText.isEmpty {
-                        ConfigManager.shared.setProfileHotkey(profile: profile, hotkey: hotkeyText)
+                    if !recordedHotkey.isEmpty {
+                        ConfigManager.shared.setProfileHotkey(profile: profile, hotkey: recordedHotkey)
+                        // 注册新的快捷键
+                        _ = HotkeyManager.shared.registerProfileHotkey(profileId: profile.id, keyCombo: recordedHotkey)
                     }
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(hotkeyText.isEmpty)
+                .disabled(recordedHotkey.isEmpty)
             }
         }
         .padding()
-        .frame(width: 350)
+        .frame(width: 400)
         .onAppear {
-            hotkeyText = profile.globalHotkey ?? ""
+            recordedHotkey = profile.globalHotkey ?? ""
         }
+    }
+}
+
+/// 快捷键录制视图
+struct HotkeyRecorderView: NSViewRepresentable {
+    @Binding var hotkey: String
+    @Binding var isRecording: Bool
+
+    func makeNSView(context: Context) -> HotkeyRecorderNSView {
+        let view = HotkeyRecorderNSView()
+        view.onHotkeyRecorded = { newHotkey in
+            hotkey = newHotkey
+            isRecording = false
+        }
+        view.onRecordingStateChanged = { recording in
+            isRecording = recording
+        }
+        view.currentHotkey = hotkey
+        return view
+    }
+
+    func updateNSView(_ nsView: HotkeyRecorderNSView, context: Context) {
+        nsView.currentHotkey = hotkey
+    }
+}
+
+/// 快捷键录制 NSView
+class HotkeyRecorderNSView: NSView {
+    var onHotkeyRecorded: ((String) -> Void)?
+    var onRecordingStateChanged: ((Bool) -> Void)?
+    var currentHotkey: String = "" {
+        didSet {
+            needsDisplay = true
+        }
+    }
+
+    private var isRecording = false {
+        didSet {
+            onRecordingStateChanged?(isRecording)
+            needsDisplay = true
+        }
+    }
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 6
+        layer?.borderWidth = 1
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        // 背景
+        let bgColor: NSColor = isRecording ? .controlAccentColor.withAlphaComponent(0.1) : .textBackgroundColor
+        bgColor.setFill()
+        NSBezierPath(roundedRect: bounds, xRadius: 6, yRadius: 6).fill()
+
+        // 边框
+        let borderColor: NSColor = isRecording ? .controlAccentColor : .separatorColor
+        borderColor.setStroke()
+        let borderPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 6, yRadius: 6)
+        borderPath.lineWidth = 1
+        borderPath.stroke()
+
+        // 文字
+        let text: String
+        let textColor: NSColor
+        if isRecording {
+            text = "录制中..."
+            textColor = .controlAccentColor
+        } else if currentHotkey.isEmpty {
+            text = "点击录制快捷键"
+            textColor = .secondaryLabelColor
+        } else {
+            text = HotkeyManager.displayString(for: currentHotkey)
+            textColor = .labelColor
+        }
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: textColor,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        let textRect = NSRect(x: 0, y: (bounds.height - 20) / 2, width: bounds.width, height: 20)
+        text.draw(in: textRect, withAttributes: attributes)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        isRecording = true
+    }
+
+    override func keyDown(with event: NSEvent) {
+        guard isRecording else {
+            super.keyDown(with: event)
+            return
+        }
+
+        // ESC 取消录制
+        if event.keyCode == 53 {
+            isRecording = false
+            return
+        }
+
+        // 需要至少一个修饰键
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard !modifiers.isEmpty else { return }
+
+        // 构建快捷键字符串
+        var parts: [String] = []
+
+        if modifiers.contains(.command) {
+            parts.append("cmd")
+        }
+        if modifiers.contains(.shift) {
+            parts.append("shift")
+        }
+        if modifiers.contains(.control) {
+            parts.append("ctrl")
+        }
+        if modifiers.contains(.option) {
+            parts.append("alt")
+        }
+
+        // 获取按键字符
+        if let key = keyString(from: event) {
+            parts.append(key)
+            let hotkeyString = parts.joined(separator: "+")
+            currentHotkey = hotkeyString
+            onHotkeyRecorded?(hotkeyString)
+            isRecording = false
+        }
+    }
+
+    private func keyString(from event: NSEvent) -> String? {
+        // 特殊键处理
+        switch event.keyCode {
+        case 0: return "a"
+        case 1: return "s"
+        case 2: return "d"
+        case 3: return "f"
+        case 4: return "h"
+        case 5: return "g"
+        case 6: return "z"
+        case 7: return "x"
+        case 8: return "c"
+        case 9: return "v"
+        case 11: return "b"
+        case 12: return "q"
+        case 13: return "w"
+        case 14: return "e"
+        case 15: return "r"
+        case 16: return "y"
+        case 17: return "t"
+        case 18: return "1"
+        case 19: return "2"
+        case 20: return "3"
+        case 21: return "4"
+        case 22: return "6"
+        case 23: return "5"
+        case 24: return "="
+        case 25: return "9"
+        case 26: return "7"
+        case 27: return "-"
+        case 28: return "8"
+        case 29: return "0"
+        case 30: return "]"
+        case 31: return "o"
+        case 32: return "u"
+        case 33: return "["
+        case 34: return "i"
+        case 35: return "p"
+        case 36: return "return"
+        case 37: return "l"
+        case 38: return "j"
+        case 39: return "'"
+        case 40: return "k"
+        case 41: return ";"
+        case 42: return "\\"
+        case 43: return ","
+        case 44: return "/"
+        case 45: return "n"
+        case 46: return "m"
+        case 47: return "."
+        case 48: return "tab"
+        case 49: return "space"
+        case 50: return "`"
+        case 51: return "delete"
+        case 96: return "f5"
+        case 97: return "f6"
+        case 98: return "f7"
+        case 99: return "f3"
+        case 100: return "f8"
+        case 101: return "f9"
+        case 103: return "f11"
+        case 109: return "f10"
+        case 111: return "f12"
+        case 118: return "f4"
+        case 120: return "f2"
+        case 122: return "f1"
+        case 123: return "left"
+        case 124: return "right"
+        case 125: return "down"
+        case 126: return "up"
+        default:
+            // 尝试使用 characters
+            if let chars = event.charactersIgnoringModifiers?.lowercased(), !chars.isEmpty {
+                return chars
+            }
+            return nil
+        }
+    }
+
+    override func resignFirstResponder() -> Bool {
+        isRecording = false
+        return super.resignFirstResponder()
     }
 }
 

@@ -8,6 +8,7 @@ class HotkeyManager: ObservableObject {
 
     private var hotkeys: [UInt32: () -> Void] = [:]
     private var hotkeyRefs: [UInt32: EventHotKeyRef?] = [:]
+    private var profileHotkeyIds: [String: UInt32] = [:]  // profileId -> hotkeyId
     private var nextHotkeyId: UInt32 = 1
 
     /// 主窗口显示回调
@@ -197,8 +198,25 @@ class HotkeyManager: ObservableObject {
 
     /// 注册 Profile 快捷键
     func registerProfileHotkey(profileId: String, keyCombo: String) -> UInt32? {
-        registerHotkey(keyCombo: keyCombo) { [weak self] in
+        // 先注销已有的快捷键
+        unregisterProfileHotkey(profileId: profileId)
+
+        let hotkeyId = registerHotkey(keyCombo: keyCombo) { [weak self] in
             self?.onProfileHotkey?(profileId)
+        }
+
+        if let id = hotkeyId {
+            profileHotkeyIds[profileId] = id
+        }
+
+        return hotkeyId
+    }
+
+    /// 注销 Profile 快捷键
+    func unregisterProfileHotkey(profileId: String) {
+        if let hotkeyId = profileHotkeyIds[profileId] {
+            unregisterHotkey(id: hotkeyId)
+            profileHotkeyIds.removeValue(forKey: profileId)
         }
     }
 

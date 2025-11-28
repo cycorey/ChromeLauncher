@@ -72,7 +72,9 @@ class BrowserLauncher {
     /// 使用 open 命令启动（确保参数正确传递）
     func launchWithWorkspace(
         profile: Profile,
-        withBrowser browserType: BrowserType? = nil
+        withBrowser browserType: BrowserType? = nil,
+        incognito: Bool = false,
+        forceNewWindow: Bool = false
     ) async -> LaunchResult {
         let browser = browserType ?? profile.browserType
 
@@ -82,6 +84,14 @@ class BrowserLauncher {
 
         guard FileManager.default.fileExists(atPath: profile.fullPath) else {
             return .profileNotFound
+        }
+
+        // 检查 Profile 是否已经在运行
+        let isRunning = ProfileScanner.shared.isProfileRunning(profile)
+
+        // 如果已经运行且不强制新窗口，激活已有窗口
+        if isRunning && !forceNewWindow && !incognito {
+            return await activateExistingProfile(profile: profile, browser: browser)
         }
 
         // 构建参数
@@ -95,18 +105,26 @@ class BrowserLauncher {
         // Profile 目录
         arguments.append("--profile-directory=\(profile.directoryName)")
 
-        // 强制打开新窗口（关键！否则会被现有实例拦截）
-        arguments.append("--new-window")
+        // 无痕模式
+        if incognito {
+            arguments.append("--incognito")
+            // 无痕模式需要新窗口
+            arguments.append("--new-window")
+        }
 
         // 启动配置参数
         arguments.append(contentsOf: profile.launchConfig.asArguments)
 
         // 使用 open -a 命令启动，通过 --args 传递参数
-        // 这样可以确保即使浏览器已运行，参数也能正确传递
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
 
-        var openArgs = ["-a", browser.applicationPath, "-n", "--args"]
+        // 如果 Profile 未运行，使用 -n 开新实例；否则不用 -n
+        var openArgs = ["-a", browser.applicationPath]
+        if !isRunning || forceNewWindow {
+            openArgs.append("-n")
+        }
+        openArgs.append("--args")
         openArgs.append(contentsOf: arguments)
         process.arguments = openArgs
 
@@ -117,6 +135,29 @@ class BrowserLauncher {
         } catch {
             return .launchFailed(error)
         }
+    }
+
+    /// 激活已运行的 Profile 窗口
+    private func activateExistingProfile(profile: Profile, browser: BrowserType) async -> LaunchResult {
+        // 使用 AppleScript 激活浏览器并切换到指定 Profile 的窗口
+        let script = """
+        tell application "\(browser.displayName)"
+            activate
+        end tell
+        """
+
+        let appleScript = NSAppleScript(source: script)
+        var error: NSDictionary?
+        appleScript?.executeAndReturnError(&error)
+
+        if error != nil {
+            // AppleScript 失败，回退到普通激活
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleIdentifier) {
+                _ = try? await NSWorkspace.shared.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration())
+            }
+        }
+
+        return .success
     }
 
     /// 打开浏览器的 Profile 管理页面

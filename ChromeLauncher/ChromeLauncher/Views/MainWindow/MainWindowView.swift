@@ -3,10 +3,21 @@ import SwiftUI
 /// 主窗口视图
 struct MainWindowView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedProfile: Profile?
+    @State private var selectedProfileId: String?
     @State private var showingCreateSheet = false
     @State private var showingDeleteAlert = false
     @State private var profileToDelete: Profile?
+
+    /// 当前选中的 Profile
+    private var selectedProfile: Profile? {
+        guard let id = selectedProfileId else { return nil }
+        for profiles in appState.profilesByBrowser.values {
+            if let profile = profiles.first(where: { $0.id == id }) {
+                return profile
+            }
+        }
+        return nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,6 +41,7 @@ struct MainWindowView: View {
                 if let profile = selectedProfile {
                     ProfileDetailView(profile: profile)
                         .frame(minWidth: 250)
+                        .id(profile.id)  // 强制刷新
                 } else {
                     emptyDetailView
                         .frame(minWidth: 250)
@@ -37,6 +49,10 @@ struct MainWindowView: View {
             }
         }
         .frame(minWidth: 700, minHeight: 500)
+        .onExitCommand {
+            // ESC 关闭窗口
+            NSApp.keyWindow?.close()
+        }
         .sheet(isPresented: $showingCreateSheet) {
             CreateProfileSheet()
         }
@@ -45,7 +61,7 @@ struct MainWindowView: View {
             Button("删除", role: .destructive) {
                 if let profile = profileToDelete {
                     _ = appState.deleteProfile(profile)
-                    selectedProfile = nil
+                    selectedProfileId = nil
                 }
             }
         } message: {
@@ -113,7 +129,7 @@ struct MainWindowView: View {
                 ) {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         appState.selectedBrowserType = browserType
-                        selectedProfile = nil
+                        selectedProfileId = nil
                     }
                 }
             }
@@ -136,14 +152,14 @@ struct MainWindowView: View {
             if appState.filteredProfiles.isEmpty {
                 emptyListView
             } else {
-                List(appState.filteredProfiles, selection: $selectedProfile) { profile in
+                List(appState.filteredProfiles, id: \.id, selection: $selectedProfileId) { profile in
                     ProfileRowView(profile: profile) {
                         appState.launch(profile: profile)
                     }
                     .contextMenu {
                         profileContextMenu(for: profile)
                     }
-                    .tag(profile)
+                    .tag(profile.id)
                 }
                 .listStyle(.inset)
             }
@@ -194,7 +210,7 @@ struct MainWindowView: View {
         }
 
         Button {
-            appState.launch(profile: profile, withBrowser: nil)
+            appState.launchIncognito(profile: profile)
         } label: {
             Label("无痕模式启动", systemImage: "eye.slash")
         }

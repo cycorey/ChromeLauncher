@@ -81,9 +81,7 @@ struct ProfileRowView: View {
                 isHovering = hovering
             }
         }
-        .onTapGesture(count: 2) {
-            onLaunch()
-        }
+        .contentShape(Rectangle())  // 确保整行可点击
     }
 }
 

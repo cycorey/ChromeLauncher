@@ -128,6 +128,29 @@ class AppState: ObservableObject {
         }
     }
 
+    /// 以无痕模式启动 Profile
+    func launchIncognito(profile: Profile) {
+        Task {
+            let result = await BrowserLauncher.shared.launchWithWorkspace(
+                profile: profile,
+                withBrowser: nil,
+                incognito: true
+            )
+
+            switch result {
+            case .success:
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                updateRunningState()
+            case .browserNotInstalled:
+                print("Browser not installed")
+            case .profileNotFound:
+                print("Profile not found")
+            case .launchFailed(let error):
+                print("Launch failed: \(error)")
+            }
+        }
+    }
+
     /// 切换收藏状态
     func toggleFavorite(profile: Profile) {
         ConfigManager.shared.toggleFavorite(profile: profile)
