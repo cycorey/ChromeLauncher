@@ -210,14 +210,22 @@ struct MainWindowView: View {
                         appState.launch(profile: profile)
                     }
                     .tag(profile.id)
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: 2) {
+                        appState.launch(profile: profile)
+                    }
+                    .onTapGesture(count: 1) {
+                        selectedProfileId = profile.id
+                    }
                     .contextMenu {
                         profileContextMenu(for: profile)
                     }
                 }
-                .onTapGesture(count: 2) {
-                    // 双击启动选中的 Profile
-                    if let profile = selectedProfile {
-                        appState.launch(profile: profile)
+                .focusable()
+                .onAppear {
+                    // 延迟让 List 获取焦点
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NSApp.keyWindow?.makeFirstResponder(nil)
                     }
                 }
                 .listStyle(.inset)
