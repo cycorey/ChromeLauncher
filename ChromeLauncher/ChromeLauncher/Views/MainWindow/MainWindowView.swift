@@ -40,11 +40,11 @@ struct MainWindowView: View {
                 // 右侧: 详情/选项面板
                 if let profile = selectedProfile {
                     ProfileDetailView(profile: profile)
-                        .frame(minWidth: 250)
+                        .frame(width: 400)
                         .id(profile.id)  // 强制刷新
                 } else {
                     emptyDetailView
-                        .frame(minWidth: 250)
+                        .frame(width: 400)
                 }
             }
         }
@@ -127,10 +127,8 @@ struct MainWindowView: View {
                     isSelected: appState.selectedBrowserType == browserType,
                     profileCount: appState.profilesByBrowser[browserType]?.count ?? 0
                 ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        appState.selectedBrowserType = browserType
-                        selectedProfileId = nil
-                    }
+                    appState.selectedBrowserType = browserType
+                    selectedProfileId = nil
                 }
             }
 
@@ -156,12 +154,29 @@ struct MainWindowView: View {
                     ProfileRowView(profile: profile) {
                         appState.launch(profile: profile)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: 2) {
+                        // 双击启动
+                        appState.launch(profile: profile)
+                    }
+                    .onTapGesture(count: 1) {
+                        // 单击选中
+                        selectedProfileId = profile.id
+                    }
                     .contextMenu {
                         profileContextMenu(for: profile)
                     }
                     .tag(profile.id)
                 }
                 .listStyle(.inset)
+                .onKeyPress(.return) {
+                    // 回车键启动选中的 Profile
+                    if let profile = selectedProfile {
+                        appState.launch(profile: profile)
+                        return .handled
+                    }
+                    return .ignored
+                }
             }
         }
     }

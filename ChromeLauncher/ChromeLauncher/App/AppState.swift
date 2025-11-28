@@ -211,24 +211,31 @@ class AppState: ObservableObject {
         var running: Set<String> = []
 
         for (browserType, profiles) in profilesByBrowser {
+            // 先检查浏览器是否运行，避免不必要的文件读取
+            guard ProfileScanner.shared.isBrowserRunning(browserType) else {
+                continue
+            }
+
             let activeProfiles = ProfileScanner.shared.getActiveProfiles(for: browserType)
 
             for profile in profiles {
-                if activeProfiles.contains(profile.directoryName) &&
-                   ProfileScanner.shared.isBrowserRunning(browserType) {
+                if activeProfiles.contains(profile.directoryName) {
                     running.insert(profile.id)
                 }
             }
         }
 
-        runningProfileIds = running
+        // 只有状态变化时才更新，减少不必要的 UI 刷新
+        if running != runningProfileIds {
+            runningProfileIds = running
+        }
     }
 
     /// 开始监控运行状态
     private func startRunningStateMonitor() {
         // 每 5 秒更新一次运行状态
         runningStateTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task.detached(priority: .background) { @MainActor in
                 self?.updateRunningState()
             }
         }

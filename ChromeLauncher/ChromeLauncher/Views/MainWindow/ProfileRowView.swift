@@ -17,7 +17,7 @@ struct ProfileRowView: View {
                 Image(systemName: profile.isFavorite ? "star.fill" : "star")
                     .foregroundColor(profile.isFavorite ? .yellow : .secondary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .help(profile.isFavorite ? "取消收藏" : "添加到收藏")
 
             // 头像
@@ -68,7 +68,7 @@ struct ProfileRowView: View {
                     Image(systemName: "play.fill")
                         .foregroundColor(.accentColor)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("启动此 Profile")
             }
         }
@@ -77,9 +77,7 @@ struct ProfileRowView: View {
         .background(isHovering ? Color.accentColor.opacity(0.05) : Color.clear)
         .cornerRadius(6)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
-            }
+            isHovering = hovering
         }
         .contentShape(Rectangle())  // 确保整行可点击
     }
@@ -90,9 +88,11 @@ struct ProfileAvatarView: View {
     let profile: Profile
     let size: CGFloat
 
+    @State private var cachedImage: NSImage?
+
     var body: some View {
         Group {
-            if let image = profile.avatarImage {
+            if let image = cachedImage {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -108,6 +108,22 @@ struct ProfileAvatarView: View {
             Circle()
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
+        .onAppear {
+            loadImage()
+        }
+    }
+
+    private func loadImage() {
+        // 在后台加载图片
+        if let path = profile.avatarImagePath {
+            DispatchQueue.global(qos: .userInitiated).async {
+                if let image = NSImage(contentsOfFile: path) {
+                    DispatchQueue.main.async {
+                        cachedImage = image
+                    }
+                }
+            }
+        }
     }
 }
 

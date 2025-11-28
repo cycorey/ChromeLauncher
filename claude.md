@@ -54,4 +54,5 @@ ChromeLauncher
 Profile 图标: Chrome 的 Profile 有自定义头像，需要显示
 检测 Chrome 运行状态: 需要显示某个 Profile 当前是否已打开,可以做，通过检查进程参数,这个一定要支持
 
+
 ultrathink

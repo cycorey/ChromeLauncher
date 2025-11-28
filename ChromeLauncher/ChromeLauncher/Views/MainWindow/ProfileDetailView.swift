@@ -121,26 +121,17 @@ struct ProfileDetailView: View {
         }
     }
 
-    /// 别名编辑
+    /// 别名编辑（简化版）
     private var aliasSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("自定义别名")
-                .font(.headline)
+        HStack {
+            TextField("自定义别名", text: $editedAlias)
+                .textFieldStyle(.roundedBorder)
 
-            HStack {
-                TextField("输入别名（留空使用原名）", text: $editedAlias)
-                    .textFieldStyle(.roundedBorder)
-
-                Button("保存") {
-                    let alias = editedAlias.isEmpty ? nil : editedAlias
-                    appState.setAlias(profile: profile, alias: alias)
-                }
-                .disabled(editedAlias == (profile.customAlias ?? ""))
+            Button("保存") {
+                let alias = editedAlias.isEmpty ? nil : editedAlias
+                appState.setAlias(profile: profile, alias: alias)
             }
-
-            Text("原名称: \(profile.originalName)")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            .disabled(editedAlias == (profile.customAlias ?? ""))
         }
     }
 
