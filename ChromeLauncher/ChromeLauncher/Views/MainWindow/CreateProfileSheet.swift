@@ -76,7 +76,7 @@ struct CreateProfileSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 400)
+        .frame(width: 800, height: 300)
         .onAppear {
             selectedBrowser = appState.selectedBrowserType
         }
@@ -94,10 +94,18 @@ struct CreateProfileSheet: View {
         }
 
         // 创建 Profile
-        if let _ = BrowserLauncher.shared.createNewProfile(
+        if let profile = BrowserLauncher.shared.createNewProfile(
             for: selectedBrowser,
             name: profileName.trimmingCharacters(in: .whitespaces)
         ) {
+            // 启动浏览器来初始化 Profile，使用合理的窗口大小
+            Task {
+                // 使用 1280x800 作为默认窗口大小，确保内容显示完整
+                let _ = await BrowserLauncher.shared.launchNewProfile(
+                    profile: profile,
+                    windowSize: LaunchConfig.WindowSize(width: 1280, height: 800)
+                )
+            }
             appState.refresh()
             dismiss()
         } else {

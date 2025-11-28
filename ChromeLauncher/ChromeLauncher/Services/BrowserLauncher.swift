@@ -185,6 +185,47 @@ class BrowserLauncher {
         try? process.run()
     }
 
+    /// 启动新创建的 Profile（用于初始化）
+    func launchNewProfile(
+        profile: Profile,
+        windowSize: LaunchConfig.WindowSize? = nil
+    ) async -> LaunchResult {
+        let browser = profile.browserType
+
+        guard browser.isInstalled else {
+            return .browserNotInstalled
+        }
+
+        // 构建参数
+        var arguments: [String] = []
+
+        // Profile 目录
+        arguments.append("--profile-directory=\(profile.directoryName)")
+
+        // 窗口大小 - 新建 Profile 时使用较大的窗口确保内容显示完整
+        if let size = windowSize {
+            arguments.append("--window-size=\(size.asArgument)")
+        }
+
+        // 新窗口
+        arguments.append("--new-window")
+
+        // 打开 Profile 设置页面
+        arguments.append("chrome://settings/manageProfile")
+
+        // 直接使用 Chrome 可执行文件启动，确保窗口大小参数生效
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: browser.executablePath)
+        process.arguments = arguments
+
+        do {
+            try process.run()
+            return .success
+        } catch {
+            return .launchFailed(error)
+        }
+    }
+
     /// 创建新的 Profile
     func createNewProfile(for browserType: BrowserType, name: String) -> Profile? {
         let dataDir = browserType.dataDirectory

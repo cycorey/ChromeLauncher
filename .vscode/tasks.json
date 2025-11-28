@@ -19,7 +19,7 @@
     {
       "label": "Run",
       "type": "shell",
-      "command": "pkill -x ChromeLauncher 2>/dev/null || true; open ~/Library/Developer/Xcode/DerivedData/ChromeLauncher-*/Build/Products/Debug/ChromeLauncher.app",
+      "command": "pkill -x ChromeLauncher 2>/dev/null || true; APP=$(find ~/Library/Developer/Xcode/DerivedData -name 'ChromeLauncher.app' -path '*/Debug/*' | head -1) && open \"$APP\"",
       "group": "none",
       "dependsOn": "Build",
       "presentation": {
