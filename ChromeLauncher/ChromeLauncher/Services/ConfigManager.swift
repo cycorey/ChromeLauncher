@@ -173,6 +173,37 @@ class ConfigManager: ObservableObject {
         saveConfig()
     }
 
+    /// 获取快速过滤按钮配置
+    func getQuickFilters() -> [QuickFilter] {
+        // 确保始终有9个过滤器
+        var filters = config.settings.quickFilters
+        if filters.count < 9 {
+            let existing = Set(filters.map { $0.id })
+            for i in 1...9 where !existing.contains(i) {
+                filters.append(QuickFilter(id: i, text: "", isEnabled: false))
+            }
+            filters.sort { $0.id < $1.id }
+        }
+        return filters
+    }
+
+    /// 更新快速过滤按钮配置
+    func setQuickFilter(id: Int, text: String) {
+        var filters = getQuickFilters()
+        if let index = filters.firstIndex(where: { $0.id == id }) {
+            filters[index].text = text
+            filters[index].isEnabled = !text.isEmpty
+        }
+        config.settings.quickFilters = filters
+        saveConfig()
+    }
+
+    /// 批量更新快速过滤按钮配置
+    func setQuickFilters(_ filters: [QuickFilter]) {
+        config.settings.quickFilters = filters
+        saveConfig()
+    }
+
     // MARK: - 导入/导出
 
     /// 导出配置

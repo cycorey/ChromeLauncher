@@ -7,6 +7,7 @@ struct MainWindowView: View {
     @State private var showingCreateSheet = false
     @State private var showingDeleteAlert = false
     @State private var profileToDelete: Profile?
+    @State private var activeFilterId: Int? = nil  // 当前激活的快速过滤按钮
 
     /// 当前选中的 Profile
     private var selectedProfile: Profile? {
@@ -69,13 +70,34 @@ struct MainWindowView: View {
                 Text("确定要删除 Profile \"\(profile.displayName)\" 吗？\n\n此操作会将 Profile 移至废纸篓，包括其中的所有数据（书签、历史记录、扩展等）。")
             }
         }
+        // ⌘1-9 快速过滤快捷键
+        .onKeyPress(phases: .down) { press in
+            guard press.modifiers == .command else { return .ignored }
+            let keyChar = press.key.character
+            guard let number = Int(String(keyChar)), number >= 1, number <= 9 else { return .ignored }
+
+            let allFilters = ConfigManager.shared.getQuickFilters()
+            if let filter = allFilters.first(where: { $0.id == number && $0.isEnabled }) {
+                applyQuickFilter(filter)
+                return .handled
+            }
+            return .ignored
+        }
     }
 
     // MARK: - Subviews
 
+    /// 快速过滤按钮
+    private var quickFilters: [QuickFilter] {
+        ConfigManager.shared.getQuickFilters().filter { $0.isEnabled }
+    }
+
     /// 顶部工具栏
     private var toolbarView: some View {
         HStack(spacing: 12) {
+            // 快速过滤按钮组
+            quickFilterButtons
+
             // 搜索框
             HStack {
                 Image(systemName: "magnifyingglass")
@@ -86,6 +108,7 @@ struct MainWindowView: View {
                 if !appState.searchText.isEmpty {
                     Button {
                         appState.searchText = ""
+                        activeFilterId = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -116,6 +139,38 @@ struct MainWindowView: View {
             .help("新建 Profile")
         }
         .padding()
+    }
+
+    /// 快速过滤按钮组
+    @ViewBuilder
+    private var quickFilterButtons: some View {
+        let allFilters = ConfigManager.shared.getQuickFilters()
+        let enabledFilters = allFilters.filter { $0.isEnabled }
+
+        if !enabledFilters.isEmpty {
+            HStack(spacing: 4) {
+                ForEach(enabledFilters) { filter in
+                    QuickFilterButton(
+                        filter: filter,
+                        isActive: activeFilterId == filter.id
+                    ) {
+                        applyQuickFilter(filter)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 应用快速过滤
+    private func applyQuickFilter(_ filter: QuickFilter) {
+        if activeFilterId == filter.id {
+            // 再次点击取消过滤
+            appState.searchText = ""
+            activeFilterId = nil
+        } else {
+            appState.searchText = filter.text
+            activeFilterId = filter.id
+        }
     }
 
     /// 浏览器选择器
@@ -256,6 +311,16 @@ struct MainWindowView: View {
 
         Divider()
 
+        // 打开 Profile 文件夹
+        Button {
+            let url = URL(fileURLWithPath: profile.fullPath)
+            NSWorkspace.shared.open(url)
+        } label: {
+            Label("在 Finder 中显示", systemImage: "folder")
+        }
+
+        Divider()
+
         Button(role: .destructive) {
             profileToDelete = profile
             showingDeleteAlert = true
@@ -297,6 +362,28 @@ struct BrowserTab: View {
             .cornerRadius(8)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// 快速过滤按钮
+struct QuickFilterButton: View {
+    let filter: QuickFilter
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(filter.text)
+                .font(.caption)
+                .lineLimit(1)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
+                .foregroundColor(isActive ? .white : .primary)
+                .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .help("⌘\(filter.id) - 过滤: \(filter.text)")
     }
 }
 

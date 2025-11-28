@@ -105,6 +105,17 @@ struct MenuBarView: View {
 
         Divider()
 
+        // 设置
+        SettingsLink {
+            HStack {
+                Image(systemName: "gear")
+                Text("设置...")
+            }
+        }
+        .keyboardShortcut(",", modifiers: .command)
+
+        Divider()
+
         // 退出
         Button {
             NSApp.terminate(nil)

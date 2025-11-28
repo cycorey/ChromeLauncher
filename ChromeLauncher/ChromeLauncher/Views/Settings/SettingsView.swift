@@ -14,6 +14,8 @@ struct SettingsView: View {
     @State private var showingImportDialog = false
     @State private var showingResetAlert = false
 
+    @State private var quickFilters: [QuickFilter] = []
+
     var body: some View {
         TabView {
             generalSettingsTab
@@ -26,6 +28,11 @@ struct SettingsView: View {
                     Label("快捷键", systemImage: "keyboard")
                 }
 
+            quickFilterSettingsTab
+                .tabItem {
+                    Label("快速过滤", systemImage: "line.3.horizontal.decrease.circle")
+                }
+
             dataSettingsTab
                 .tabItem {
                     Label("数据", systemImage: "externaldrive")
@@ -36,7 +43,7 @@ struct SettingsView: View {
                     Label("关于", systemImage: "info.circle")
                 }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 500, height: 500)
         .onAppear {
             loadSettings()
         }
@@ -133,6 +140,62 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// 快速过滤设置
+    private var quickFilterSettingsTab: some View {
+        Form {
+            Section {
+                Text("配置快速过滤按钮，在主界面搜索框左侧显示。点击按钮或按 ⌘1-9 可快速过滤 Profile。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("快速过滤按钮 (⌘1-9)") {
+                ForEach(0..<9, id: \.self) { index in
+                    HStack {
+                        Text("⌘\(index + 1)")
+                            .font(.system(.body, design: .monospaced))
+                            .frame(width: 40)
+                            .foregroundColor(.secondary)
+
+                        TextField("过滤文本（留空则不显示）", text: Binding(
+                            get: { quickFilters.indices.contains(index) ? quickFilters[index].text : "" },
+                            set: { newValue in
+                                if quickFilters.indices.contains(index) {
+                                    quickFilters[index].text = newValue
+                                    quickFilters[index].isEnabled = !newValue.isEmpty
+                                }
+                            }
+                        ))
+                        .textFieldStyle(.roundedBorder)
+
+                        if quickFilters.indices.contains(index) && quickFilters[index].isEnabled {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        } else {
+                            Image(systemName: "circle")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section {
+                HStack {
+                    Spacer()
+                    Button("保存") {
+                        configManager.setQuickFilters(quickFilters)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .onAppear {
+            quickFilters = configManager.getQuickFilters()
+        }
     }
 
     /// 数据设置

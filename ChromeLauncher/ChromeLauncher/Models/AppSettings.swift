@@ -13,18 +13,31 @@ struct AppConfig: Codable {
     )
 }
 
+/// 快速过滤按钮配置
+struct QuickFilter: Codable, Identifiable, Equatable {
+    var id: Int  // 1-9 对应 ⌘1-9
+    var text: String  // 过滤文本
+    var isEnabled: Bool  // 是否启用
+
+    static func defaultFilters() -> [QuickFilter] {
+        (1...9).map { QuickFilter(id: $0, text: "", isEnabled: false) }
+    }
+}
+
 /// 应用设置
 struct AppSettings: Codable {
     var globalHotkey: String
     var showInDock: Bool
     var launchAtLogin: Bool
     var defaultBrowser: String  // BrowserType.rawValue
+    var quickFilters: [QuickFilter]  // 快速过滤按钮配置
 
     static let `default` = AppSettings(
         globalHotkey: "alt+g",
         showInDock: false,
         launchAtLogin: false,
-        defaultBrowser: BrowserType.chrome.rawValue
+        defaultBrowser: BrowserType.chrome.rawValue,
+        quickFilters: QuickFilter.defaultFilters()
     )
 }
 
