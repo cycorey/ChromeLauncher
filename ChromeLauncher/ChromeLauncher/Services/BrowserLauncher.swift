@@ -119,9 +119,9 @@ class BrowserLauncher {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
 
-        // 如果 Profile 未运行，使用 -n 开新实例；否则不用 -n
+        // 如果 Profile 未运行、强制新窗口或无痕模式，使用 -n 开新实例
         var openArgs = ["-a", browser.applicationPath]
-        if !isRunning || forceNewWindow {
+        if !isRunning || forceNewWindow || incognito {
             openArgs.append("-n")
         }
         openArgs.append("--args")

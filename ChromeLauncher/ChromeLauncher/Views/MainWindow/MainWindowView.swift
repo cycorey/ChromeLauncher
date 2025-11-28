@@ -9,6 +9,7 @@ struct MainWindowView: View {
     @State private var profileToDelete: Profile?
     @State private var activeFilterId: Int? = nil  // 当前激活的快速过滤按钮
     @FocusState private var isListFocused: Bool
+    @FocusState private var isSearchFocused: Bool
 
     /// 当前选中的 Profile
     private var selectedProfile: Profile? {
@@ -105,6 +106,14 @@ struct MainWindowView: View {
                     .foregroundColor(.secondary)
                 TextField("搜索 Profile...", text: $appState.searchText)
                     .textFieldStyle(.plain)
+                    .focused($isSearchFocused)
+                    .onSubmit {
+                        // 按回车后选中第一个并聚焦到列表
+                        if let firstProfile = appState.filteredProfiles.first {
+                            selectedProfileId = firstProfile.id
+                            isListFocused = true
+                        }
+                    }
 
                 if !appState.searchText.isEmpty {
                     Button {
@@ -129,7 +138,8 @@ struct MainWindowView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help("刷新 Profile 列表")
+            .keyboardShortcut("r", modifiers: .command)
+            .help("刷新 Profile 列表 (⌘R)")
 
             // 新建 Profile 按钮
             Button {
@@ -172,6 +182,8 @@ struct MainWindowView: View {
             appState.searchText = filter.text
             activeFilterId = filter.id
         }
+        // 聚焦到搜索框
+        isSearchFocused = true
     }
 
     /// 浏览器选择器
@@ -191,9 +203,15 @@ struct MainWindowView: View {
             Spacer()
 
             // Profile 统计
-            Text("\(appState.totalProfileCount) 个 Profile")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Group {
+                if appState.searchText.isEmpty {
+                    Text("\(appState.totalProfileCount) 个 Profile")
+                } else {
+                    Text("\(appState.filteredProfiles.count)/\(appState.totalProfileCount) 个 Profile")
+                }
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
