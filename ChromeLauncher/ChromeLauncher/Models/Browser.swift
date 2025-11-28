@@ -8,6 +8,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
     case chromium = "chromium"
     case edge = "edge"
     case brave = "brave"
+    case vivaldi = "vivaldi"
 
     var id: String { rawValue }
 
@@ -18,6 +19,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "Chromium"
         case .edge: return "Microsoft Edge"
         case .brave: return "Brave"
+        case .vivaldi: return "Vivaldi"
         }
     }
 
@@ -28,6 +30,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "Chromium"
         case .edge: return "Edge"
         case .brave: return "Brave"
+        case .vivaldi: return "Vivaldi"
         }
     }
 
@@ -38,6 +41,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "org.chromium.Chromium"
         case .edge: return "com.microsoft.edgemac"
         case .brave: return "com.brave.Browser"
+        case .vivaldi: return "com.vivaldi.Vivaldi"
         }
     }
 
@@ -48,6 +52,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "/Applications/Chromium.app"
         case .edge: return "/Applications/Microsoft Edge.app"
         case .brave: return "/Applications/Brave Browser.app"
+        case .vivaldi: return "/Applications/Vivaldi.app"
         }
     }
 
@@ -58,6 +63,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "/Applications/Chromium.app/Contents/MacOS/Chromium"
         case .edge: return "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
         case .brave: return "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        case .vivaldi: return "/Applications/Vivaldi.app/Contents/MacOS/Vivaldi"
         }
     }
 
@@ -69,6 +75,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "\(home)/Library/Application Support/Chromium"
         case .edge: return "\(home)/Library/Application Support/Microsoft Edge"
         case .brave: return "\(home)/Library/Application Support/BraveSoftware/Brave-Browser"
+        case .vivaldi: return "\(home)/Library/Application Support/Vivaldi"
         }
     }
 
@@ -79,6 +86,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .chromium: return "chromium"
         case .edge: return "edge"
         case .brave: return "brave"
+        case .vivaldi: return "vivaldi"
         }
     }
 

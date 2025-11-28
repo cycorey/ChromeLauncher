@@ -374,6 +374,7 @@ struct HotkeySettingSheet: View {
             browserType: .chrome,
             directoryName: "Profile 62",
             originalName: "Test Profile",
+            gaiaName: "test@gmail.com",
             customAlias: "工作账号",
             avatarImagePath: nil,
             avatarIconId: nil,

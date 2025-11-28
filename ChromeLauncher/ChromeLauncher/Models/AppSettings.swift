@@ -21,7 +21,7 @@ struct AppSettings: Codable {
     var defaultBrowser: String  // BrowserType.rawValue
 
     static let `default` = AppSettings(
-        globalHotkey: "cmd+shift+g",
+        globalHotkey: "alt+g",
         showInDock: false,
         launchAtLogin: false,
         defaultBrowser: BrowserType.chrome.rawValue

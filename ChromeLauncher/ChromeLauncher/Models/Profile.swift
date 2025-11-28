@@ -6,7 +6,8 @@ struct Profile: Identifiable, Hashable {
     let id: String  // 唯一标识: browserType_profileDirectory
     let browserType: BrowserType
     let directoryName: String  // e.g., "Profile 62", "Default"
-    let originalName: String   // 从浏览器读取的原始名称
+    let originalName: String   // 从浏览器读取的原始名称 (name 字段)
+    let gaiaName: String?      // Google 账号名称 (gaia_name 字段)
     var customAlias: String?   // 用户自定义别名
     let avatarImagePath: String?  // Google 账号头像路径
     let avatarIconId: String?     // Chrome 内置头像 ID
@@ -17,7 +18,14 @@ struct Profile: Identifiable, Hashable {
 
     /// 显示名称（优先使用别名）
     var displayName: String {
-        customAlias ?? originalName
+        if let alias = customAlias {
+            return alias
+        }
+        // 格式: 自定义名称 (Google账号名)
+        if let gaia = gaiaName, !gaia.isEmpty {
+            return "\(originalName) (\(gaia))"
+        }
+        return originalName
     }
 
     /// 完整的 Profile 目录路径
@@ -114,6 +122,7 @@ extension Profile {
         infoCache: [String: Any],
         userConfig: ProfileUserConfig?
     ) -> Profile {
+        // Local State 中的 name 字段就是用户在 Chrome 中设置的自定义名称
         let name = infoCache["name"] as? String ?? directoryName
         let gaiaName = infoCache["gaia_name"] as? String
         let avatarIcon = infoCache["avatar_icon"] as? String
@@ -133,7 +142,8 @@ extension Profile {
             id: "\(browserType.rawValue)_\(directoryName)",
             browserType: browserType,
             directoryName: directoryName,
-            originalName: gaiaName ?? name,
+            originalName: name,
+            gaiaName: gaiaName,
             customAlias: userConfig?.alias,
             avatarImagePath: hasAvatar ? avatarPath : nil,
             avatarIconId: avatarIcon,

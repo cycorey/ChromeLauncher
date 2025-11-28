@@ -132,6 +132,7 @@ extension Date {
                 browserType: .chrome,
                 directoryName: "Profile 62",
                 originalName: "Test Profile",
+                gaiaName: "test@gmail.com",
                 customAlias: nil,
                 avatarImagePath: nil,
                 avatarIconId: nil,

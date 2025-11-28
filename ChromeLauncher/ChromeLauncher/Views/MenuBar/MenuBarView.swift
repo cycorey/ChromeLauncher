@@ -49,48 +49,49 @@ struct MenuBarView: View {
                 Image(systemName: "rectangle.grid.2x2")
                 Text("打开完整界面")
                 Spacer()
-                Text("⌘⇧G")
+                Text("⌥G")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
-        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .keyboardShortcut("g", modifiers: [.option])
 
         Divider()
 
-        // 快速启动子菜单（按浏览器分组）
-        Menu("快速启动") {
-            ForEach(BrowserType.allCases.filter { $0.isInstalled }) { browserType in
-                if let profiles = appState.profilesByBrowser[browserType], !profiles.isEmpty {
-                    Menu(browserType.displayName) {
-                        ForEach(profiles.prefix(10)) { profile in
-                            Button {
-                                appState.launch(profile: profile)
-                            } label: {
-                                HStack {
-                                    Text(profile.displayName)
-                                    if appState.isProfileRunning(profile) {
-                                        Spacer()
-                                        Image(systemName: "circle.fill")
-                                            .foregroundColor(.green)
-                                            .font(.caption2)
-                                    }
-                                }
-                            }
-                        }
+        // 快速启动（直接显示，按浏览器分组，用分割线分隔）
+        ForEach(BrowserType.allCases.filter { $0.isInstalled && $0.hasDataDirectory }) { browserType in
+            if let profiles = appState.profilesByBrowser[browserType], !profiles.isEmpty {
+                // 浏览器名称作为标题
+                Text(browserType.displayName)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
 
-                        if profiles.count > 10 {
-                            Divider()
-                            Text("还有 \(profiles.count - 10) 个 Profile...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                // 显示该浏览器的 Profile（最多显示 10 个）
+                ForEach(profiles.prefix(10)) { profile in
+                    Button {
+                        appState.launch(profile: profile)
+                    } label: {
+                        HStack {
+                            Text(profile.displayName)
+                            Spacer()
+                            if appState.isProfileRunning(profile) {
+                                Circle()
+                                    .fill(.green)
+                                    .frame(width: 6, height: 6)
+                            }
                         }
                     }
                 }
+
+                if profiles.count > 10 {
+                    Text("还有 \(profiles.count - 10) 个...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
             }
         }
-
-        Divider()
 
         // 刷新
         Button {
@@ -101,17 +102,6 @@ struct MenuBarView: View {
                 Text("刷新 Profile 列表")
             }
         }
-
-        // 设置
-        Button {
-            openSettings()
-        } label: {
-            HStack {
-                Image(systemName: "gear")
-                Text("设置...")
-            }
-        }
-        .keyboardShortcut(",", modifiers: .command)
 
         Divider()
 
@@ -132,12 +122,6 @@ struct MenuBarView: View {
         if let window = NSApp.windows.first(where: { $0.title == "ChromeLauncher" }) {
             window.makeKeyAndOrderFront(nil)
         }
-    }
-
-    private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        // 打开设置窗口
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 }
 

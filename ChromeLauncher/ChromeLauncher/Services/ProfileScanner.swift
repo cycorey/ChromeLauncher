@@ -100,6 +100,7 @@ class ProfileScanner {
                     browserType: browserType,
                     directoryName: item,
                     originalName: name,
+                    gaiaName: nil,
                     customAlias: userConfig?.alias,
                     avatarImagePath: hasAvatar ? avatarPath : nil,
                     avatarIconId: nil,

@@ -69,7 +69,7 @@ class BrowserLauncher {
         try process.run()
     }
 
-    /// 使用 NSWorkspace 启动（更优雅的方式）
+    /// 使用 open 命令启动（确保参数正确传递）
     func launchWithWorkspace(
         profile: Profile,
         withBrowser browserType: BrowserType? = nil
@@ -87,19 +87,32 @@ class BrowserLauncher {
         // 构建参数
         var arguments: [String] = []
 
+        // 用户数据目录（如果使用非默认浏览器打开）
         if browserType != nil && browserType != profile.browserType {
             arguments.append("--user-data-dir=\(profile.browserType.dataDirectory)")
         }
+
+        // Profile 目录
         arguments.append("--profile-directory=\(profile.directoryName)")
+
+        // 强制打开新窗口（关键！否则会被现有实例拦截）
+        arguments.append("--new-window")
+
+        // 启动配置参数
         arguments.append(contentsOf: profile.launchConfig.asArguments)
 
-        // 使用 NSWorkspace 启动
-        let config = NSWorkspace.OpenConfiguration()
-        config.arguments = arguments
+        // 使用 open -a 命令启动，通过 --args 传递参数
+        // 这样可以确保即使浏览器已运行，参数也能正确传递
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+
+        var openArgs = ["-a", browser.applicationPath, "-n", "--args"]
+        openArgs.append(contentsOf: arguments)
+        process.arguments = openArgs
 
         do {
-            let url = URL(fileURLWithPath: browser.applicationPath)
-            _ = try await NSWorkspace.shared.openApplication(at: url, configuration: config)
+            try process.run()
+            process.waitUntilExit()
             return .success
         } catch {
             return .launchFailed(error)
@@ -157,6 +170,7 @@ class BrowserLauncher {
                 browserType: browserType,
                 directoryName: newDirName,
                 originalName: name,
+                gaiaName: nil,
                 customAlias: nil,
                 avatarImagePath: nil,
                 avatarIconId: nil,
