@@ -8,6 +8,7 @@ struct MainWindowView: View {
     @State private var showingDeleteAlert = false
     @State private var profileToDelete: Profile?
     @State private var activeFilterId: Int? = nil  // 当前激活的快速过滤按钮
+    @FocusState private var isListFocused: Bool
 
     /// 当前选中的 Profile
     private var selectedProfile: Profile? {
@@ -216,18 +217,13 @@ struct MainWindowView: View {
                     }
                     .onTapGesture(count: 1) {
                         selectedProfileId = profile.id
+                        isListFocused = true
                     }
                     .contextMenu {
                         profileContextMenu(for: profile)
                     }
                 }
-                .focusable()
-                .onAppear {
-                    // 延迟让 List 获取焦点
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        NSApp.keyWindow?.makeFirstResponder(nil)
-                    }
-                }
+                .focused($isListFocused)
                 .listStyle(.inset)
                 .onKeyPress(.return) {
                     // 回车键启动选中的 Profile
