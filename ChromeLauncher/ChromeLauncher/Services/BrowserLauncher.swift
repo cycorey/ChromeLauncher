@@ -89,9 +89,9 @@ class BrowserLauncher {
         // 检查 Profile 是否已经在运行
         let isRunning = ProfileScanner.shared.isProfileRunning(profile)
 
-        // 如果已经运行且不强制新窗口，激活已有窗口
+        // 如果已经运行且不是强制新窗口或无痕模式，直接激活浏览器窗口
         if isRunning && !forceNewWindow && !incognito {
-            return await activateExistingProfile(profile: profile, browser: browser)
+            return activateBrowserWindow(browser: browser, profile: profile)
         }
 
         // 构建参数
@@ -115,18 +115,10 @@ class BrowserLauncher {
         // 启动配置参数
         arguments.append(contentsOf: profile.launchConfig.asArguments)
 
-        // 使用 open -a 命令启动，通过 --args 传递参数
+        // 使用 open -n 启动新实例
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-
-        // 如果 Profile 未运行、强制新窗口或无痕模式，使用 -n 开新实例
-        var openArgs = ["-a", browser.applicationPath]
-        if !isRunning || forceNewWindow || incognito {
-            openArgs.append("-n")
-        }
-        openArgs.append("--args")
-        openArgs.append(contentsOf: arguments)
-        process.arguments = openArgs
+        process.arguments = ["-n", "-a", browser.applicationPath, "--args"] + arguments
 
         do {
             try process.run()
@@ -137,9 +129,25 @@ class BrowserLauncher {
         }
     }
 
-    /// 激活已运行的 Profile 窗口
-    private func activateExistingProfile(profile: Profile, browser: BrowserType) async -> LaunchResult {
-        // 使用 AppleScript 激活浏览器并切换到指定 Profile 的窗口
+    /// 激活已运行的浏览器窗口
+    private func activateBrowserWindow(browser: BrowserType, profile: Profile) -> LaunchResult {
+        // 策略：
+        // 1. 调用 Chrome 可执行文件 + --profile-directory + about:blank
+        //    about:blank 避免打开新标签页，同时触发 Chrome 内部 profile 激活逻辑
+        // 2. 用 AppleScript activate 将整个应用带到前台
+
+        // 第一步：调用 Chrome 可执行文件，传递 about:blank 避免打开新标签页
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: browser.executablePath)
+        process.arguments = ["--profile-directory=\(profile.directoryName)", "about:blank"]
+
+        do {
+            try process.run()
+        } catch {
+            // 如果失败，继续尝试 AppleScript
+        }
+
+        // 第二步：使用 AppleScript 将应用带到前台
         let script = """
         tell application "\(browser.displayName)"
             activate
@@ -147,15 +155,8 @@ class BrowserLauncher {
         """
 
         let appleScript = NSAppleScript(source: script)
-        var error: NSDictionary?
-        appleScript?.executeAndReturnError(&error)
-
-        if error != nil {
-            // AppleScript 失败，回退到普通激活
-            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleIdentifier) {
-                _ = try? await NSWorkspace.shared.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration())
-            }
-        }
+        var appleError: NSDictionary?
+        appleScript?.executeAndReturnError(&appleError)
 
         return .success
     }
