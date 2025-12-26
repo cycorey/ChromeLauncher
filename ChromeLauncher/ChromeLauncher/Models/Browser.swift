@@ -9,6 +9,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
     case edge = "edge"
     case brave = "brave"
     case vivaldi = "vivaldi"
+    case helium = "helium"
 
     var id: String { rawValue }
 
@@ -16,10 +17,11 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .chrome: return "Google Chrome"
         case .chromeCanary: return "Chrome Canary"
-        case .chromium: return "Chromium"
+        case .chromium: return "Ungoogled"
         case .edge: return "Microsoft Edge"
         case .brave: return "Brave"
         case .vivaldi: return "Vivaldi"
+        case .helium: return "Helium"
         }
     }
 
@@ -27,10 +29,11 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .chrome: return "Chrome"
         case .chromeCanary: return "Canary"
-        case .chromium: return "Chromium"
+        case .chromium: return "Ungoogled"
         case .edge: return "Edge"
         case .brave: return "Brave"
         case .vivaldi: return "Vivaldi"
+        case .helium: return "Helium"
         }
     }
 
@@ -42,6 +45,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .edge: return "com.microsoft.edgemac"
         case .brave: return "com.brave.Browser"
         case .vivaldi: return "com.vivaldi.Vivaldi"
+        case .helium: return "net.imput.helium"
         }
     }
 
@@ -53,6 +57,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .edge: return "/Applications/Microsoft Edge.app"
         case .brave: return "/Applications/Brave Browser.app"
         case .vivaldi: return "/Applications/Vivaldi.app"
+        case .helium: return "/Applications/Helium.app"
         }
     }
 
@@ -64,6 +69,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .edge: return "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
         case .brave: return "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
         case .vivaldi: return "/Applications/Vivaldi.app/Contents/MacOS/Vivaldi"
+        case .helium: return "/Applications/Helium.app/Contents/MacOS/Helium"
         }
     }
 
@@ -76,6 +82,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .edge: return "\(home)/Library/Application Support/Microsoft Edge"
         case .brave: return "\(home)/Library/Application Support/BraveSoftware/Brave-Browser"
         case .vivaldi: return "\(home)/Library/Application Support/Vivaldi"
+        case .helium: return "\(home)/Library/Application Support/net.imput.helium"
         }
     }
 
@@ -87,6 +94,7 @@ enum BrowserType: String, CaseIterable, Codable, Identifiable {
         case .edge: return "edge"
         case .brave: return "brave"
         case .vivaldi: return "vivaldi"
+        case .helium: return "helium"
         }
     }
 
